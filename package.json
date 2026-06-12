@@ -1,0 +1,82 @@
+{
+  "name": "video_tool",
+  "version": "0.1.0",
+  "description": "Windows desktop video download tool.",
+  "private": true,
+  "main": "electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "setup:binaries": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-binaries.ps1",
+    "predev": "npm run setup:binaries",
+    "dev:renderer": "vite --host 127.0.0.1 --port 5273 --strictPort",
+    "dev:electron": "node scripts/start-electron-dev.cjs",
+    "dev": "node scripts/dev.cjs",
+    "prebuild": "npm run setup:binaries",
+    "build:renderer": "vite build",
+    "build": "node scripts/build.cjs",
+    "check:desktop": "node scripts/check-desktop.cjs",
+    "check:binaries": "electron --in-process-gpu scripts/check-binaries.cjs",
+    "check:v1-services": "electron --in-process-gpu scripts/check-v1-services.cjs",
+    "check:v2-options": "electron --in-process-gpu scripts/check-v2-options.cjs",
+    "check:v2-subtitles": "electron --in-process-gpu scripts/check-v2-subtitles.cjs",
+    "check:v2-subtitle-download": "electron --in-process-gpu scripts/check-v2-subtitle-download-smoke.cjs",
+    "check:v2-embed-subtitles": "electron --in-process-gpu scripts/check-v2-embed-subtitle-smoke.cjs",
+    "check:v2-metadata-smoke": "electron --in-process-gpu scripts/check-v2-metadata-smoke.cjs",
+    "check:v2-archive-history": "electron --in-process-gpu scripts/check-v2-archive-history.cjs",
+    "check:v2-playlist": "electron --in-process-gpu scripts/check-v2-playlist.cjs",
+    "check:task-actions": "electron --in-process-gpu scripts/check-task-actions.cjs",
+    "check:download-smoke": "electron --in-process-gpu scripts/check-download-smoke.cjs",
+    "check:bilibili-parse": "electron --in-process-gpu scripts/check-bilibili-parse.cjs",
+    "check:bilibili-download": "electron --in-process-gpu scripts/check-bilibili-download-smoke.cjs",
+    "check:persistence": "electron --in-process-gpu scripts/check-persistence.cjs",
+    "check:package": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/check-package.ps1",
+    "check:dev-start": "node scripts/check-dev-start.cjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.1.0",
+    "electron": "^39.0.0",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.0",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.example.video_tool",
+    "productName": "video_tool",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

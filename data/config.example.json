@@ -1,0 +1,10 @@
+{
+  "configVersion": 1,
+  "defaultOutputDir": "",
+  "defaultMode": "video",
+  "defaultAudioFormat": "mp3",
+  "defaultContainer": "mp4",
+  "outputTemplate": "%(title)s.%(ext)s",
+  "concurrentDownloads": 1,
+  "theme": "system"
+}
