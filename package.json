@@ -48,6 +48,7 @@
   "build": {
     "appId": "com.example.video_tool",
     "productName": "video_tool",
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
