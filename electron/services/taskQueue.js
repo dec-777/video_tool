@@ -182,7 +182,7 @@ function handleTaskClose(taskId, code) {
       completedAt: Date.now(),
       processId: null
     });
-    addHistoryRecord(completed);
+    recordHistory(completed);
     emitTaskEvent(IPC_CHANNELS.EVENTS.TASK_COMPLETED, completed);
     startNext();
     return;
@@ -295,7 +295,7 @@ function failTask(taskId, error) {
 
   writeTaskLog(taskId, "Task failed", normalized);
   if (failed) {
-    addHistoryRecord(failed);
+    recordHistory(failed);
   }
   emitTaskEvent(IPC_CHANNELS.EVENTS.TASK_FAILED, failed);
   startNext();
@@ -320,7 +320,28 @@ function emitTaskEvent(channel, task) {
     return;
   }
 
-  mainWindow.webContents.send(channel, task);
+  try {
+    mainWindow.webContents.send(channel, task);
+  } catch (error) {
+    writeTaskLog(task?.id, "Task event send failed", {
+      channel,
+      error: error.message || String(error)
+    });
+  }
+}
+
+function recordHistory(task) {
+  if (!task) {
+    return;
+  }
+
+  try {
+    addHistoryRecord(task);
+  } catch (error) {
+    writeTaskLog(task.id, "History write failed", {
+      error: error.message || String(error)
+    });
+  }
 }
 
 function removeFromPending(taskId) {

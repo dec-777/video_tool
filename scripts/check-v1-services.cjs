@@ -4,6 +4,7 @@ const { buildYtdlpArgs } = require("../electron/services/commandBuilder");
 const { checkBinaries } = require("../electron/services/binaryService");
 const { normalizeError } = require("../electron/services/errorService");
 const {
+  BILIBILI_ORIGIN,
   BILIBILI_REFERER,
   BILIBILI_USER_AGENT
 } = require("../electron/services/siteRequestArgs");
@@ -63,12 +64,25 @@ app.whenReady()
     assertIncludes(videoArgs, ["--retry-sleep", "http:linear=1::3", "fragment:linear=1::3"]);
     assertIncludes(audioArgs, ["-x", "--audio-format", "m4a"]);
     assertIncludes(biliArgs, ["--user-agent", BILIBILI_USER_AGENT, "--referer", BILIBILI_REFERER]);
+    assertIncludes(biliArgs, ["--add-header", `Origin:${BILIBILI_ORIGIN}`]);
 
     const progress = parseProgressLine(
       "[download]  35.2% of 50.00MiB at 2.30MiB/s ETA 00:15"
     );
     if (!progress || progress.percent !== 35.2 || progress.speed !== "2.30MiB/s") {
       throw new Error("progress parser did not parse download progress");
+    }
+
+    const completeProgress = parseProgressLine("[download] 100% of 1.00MiB in 00:00");
+    if (!completeProgress || completeProgress.percent !== 100 || completeProgress.totalSize !== "1.00MiB") {
+      throw new Error("progress parser did not parse completed download progress without ETA");
+    }
+
+    const movedFile = parseProgressLine(
+      '[MoveFiles] Moving file "temp-file.mp4" to "E:\\Downloads 测试\\final-file.mp4"'
+    );
+    if (!movedFile || movedFile.outputFile !== "E:\\Downloads 测试\\final-file.mp4") {
+      throw new Error("progress parser did not keep final MoveFiles destination");
     }
 
     const http412 = normalizeError(new Error("HTTP Error 412: Precondition Failed"));

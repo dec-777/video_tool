@@ -1,12 +1,16 @@
+const fs = require("fs");
+const path = require("path");
 const { app } = require("electron");
 const { useWorkspaceUserData } = require("./testUserData.cjs");
 const DEFAULT_CONFIG = require("../electron/constants/defaultConfig");
-const { getConfig, saveConfig } = require("../electron/services/configStore");
+const { getConfig, getConfigPath, saveConfig } = require("../electron/services/configStore");
 const {
   addHistoryRecord,
   clearHistory,
   getHistory
 } = require("../electron/services/historyStore");
+const { writeTaskLog } = require("../electron/services/logService");
+const { getUserDataPath } = require("../electron/utils/pathUtils");
 
 useWorkspaceUserData(app, "check-persistence");
 
@@ -104,6 +108,8 @@ app.whenReady()
     }
 
     clearHistory();
+    verifyBrokenConfigRecovery();
+    verifyLogSanitization();
     saveConfig(DEFAULT_CONFIG);
     console.log("persistence checks passed");
     app.exit(0);
@@ -112,3 +118,39 @@ app.whenReady()
     console.error(error);
     app.exit(1);
   });
+
+function verifyBrokenConfigRecovery() {
+  const configPath = getConfigPath();
+  fs.writeFileSync(configPath, "{broken json", "utf8");
+
+  const recovered = getConfig();
+  if (recovered.configVersion !== DEFAULT_CONFIG.configVersion) {
+    throw new Error("broken config was not recovered to defaults");
+  }
+
+  const backupFile = fs
+    .readdirSync(path.dirname(configPath))
+    .find((file) => file.startsWith("config.json.broken-") && file.endsWith(".bak"));
+
+  if (!backupFile) {
+    throw new Error("broken config was not backed up");
+  }
+}
+
+function verifyLogSanitization() {
+  writeTaskLog("sensitive_check", "sensitive command", {
+    args: ["--cookies", "E:\\secret\\cookies.txt"],
+    Authorization: "Bearer secret-token",
+    password: "secret-password",
+    cookiesFile: "E:\\secret\\cookies.txt",
+    cookiesFromBrowser: "edge"
+  });
+
+  const logPath = getUserDataPath("logs", "task-sensitive_check.log");
+  const logText = fs.readFileSync(logPath, "utf8");
+  for (const secret of ["cookies.txt", "secret-token", "secret-password", "edge"]) {
+    if (logText.includes(secret)) {
+      throw new Error(`sensitive log value was not sanitized: ${secret}`);
+    }
+  }
+}

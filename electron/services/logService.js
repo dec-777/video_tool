@@ -51,6 +51,12 @@ function formatLine(message, details) {
 
 function sanitizeLogText(value) {
   return String(value)
+    .replace(/(--cookies\s+)(?:"[^"]+"|[^\s"]+)/gi, "$1***")
+    .replace(/(Authorization\s*[:=]\s*)(?:"[^"]+"|[^\s"]+)/gi, "$1***")
+    .replace(/((?:access[_-]?token|refresh[_-]?token|password)\s*[:=]\s*)(?:"[^"]+"|[^\s"]+)/gi, "$1***")
+    .replace(/("--cookies"\s*,\s*")[^"]+/gi, "$1***")
+    .replace(/("Authorization"\s*:\s*")[^"]+/gi, "$1***")
+    .replace(/("(?:access[_-]?token|refresh[_-]?token|password)"\s*:\s*")[^"]+/gi, "$1***")
     .replace(/cookies?=[^&\s"]+/gi, "cookie=***")
     .replace(/("cookies?File"\s*:\s*")[^"]+/gi, "$1***")
     .replace(/("cookiesFromBrowser"\s*:\s*")[^"]+/gi, "$1***");

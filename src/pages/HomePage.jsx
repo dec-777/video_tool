@@ -233,7 +233,7 @@ function HomePage() {
         languages: subtitleLanguages
           .split(",")
           .map((item) => item.trim())
-        .filter(Boolean),
+          .filter(Boolean),
         format: subtitleFormat,
         embed: mode !== "subtitle-only" && embedSubs
       },

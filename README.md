@@ -2,6 +2,16 @@
 
 `video_tool` 是我做的一款 Windows 桌面视频工具，主要用来把常见的视频保存、音频提取、批量任务管理和历史记录整理做得更顺手。它的重点不是让用户面对复杂参数，而是把日常会用到的操作放进一个清楚、稳定、可以直接点击使用的桌面应用里。
 
+## 功能概览
+
+- 单链接解析、视频保存和音频提取。
+- 多链接批量加入任务，自动过滤空行和重复链接。
+- 任务队列、进度、速度、剩余时间、取消和失败重试。
+- 下载历史记录、搜索、筛选、重新下载和清空历史。
+- 默认保存目录、文件名模板、下载模式、音频格式和并发数量设置。
+- 在可用时处理字幕、封面、简介、元数据、播放列表范围等进阶选项。
+- 本地组件检测、Windows 安装包和源码本地部署流程。
+
 ## 直接下载安装
 
 如果只是想使用软件，下载最新版安装程序即可，不需要配置开发环境。
@@ -10,7 +20,7 @@
 
 当前版本安装包：
 
-[video_tool.Setup.0.1.0.exe](https://github.com/dec-777/video_tool/releases/download/v0.1.0/video_tool.Setup.0.1.0.exe)
+[video_tool.Setup.0.1.1.exe](https://github.com/dec-777/video_tool/releases/download/v0.1.1/video_tool.Setup.0.1.1.exe)
 
 下载完成后双击安装，按提示完成安装即可打开使用。
 
@@ -27,7 +37,14 @@
 - 通过历史记录找回之前处理过的内容。
 - 给下载文件统一设置保存目录和命名规则。
 
-## 功能介绍
+暂不建议的场景：
+
+- 保存自己无权保存或不允许离线保存的内容。
+- 处理带有商业 DRM 或明确访问限制的内容。
+- 把 Cookie、代理等高级选项交给不可信环境使用。
+- 期待所有网站永久可用，网站规则变化时可能需要等待适配。
+
+## 主要功能
 
 ### 单链接处理
 
@@ -82,6 +99,16 @@
 - 本地运行环境检测。
 - 恢复默认设置。
 
+## 页面说明
+
+- 首页：处理单个链接，解析信息并创建下载任务。
+- 批量：一次粘贴多个链接，按一行一个的方式加入队列。
+- 播放列表：解析列表条目，选择条目或范围加入任务。
+- 字幕：集中处理字幕提取相关操作。
+- 任务中心：查看下载状态、进度、速度、ETA、取消和重试。
+- 历史记录：查看结果、筛选记录、打开目录和重新下载。
+- 设置：配置默认参数、进阶选项和本地组件检测。
+
 ## 使用流程
 
 1. 打开 `video_tool`。
@@ -116,14 +143,54 @@ npm run dev
 
 首次运行源码前，`npm run setup:binaries` 会准备本地运行需要的组件。仓库默认不提交这些大文件，所以新电脑部署时需要先执行这一步。
 
+## 开发命令
+
+```powershell
+npm install
+npm run setup:binaries
+npm run dev
+```
+
+常用脚本：
+
+```powershell
+npm run dev:renderer
+npm run dev:electron
+npm run build:renderer
+npm run build
+```
+
+常用检查：
+
+```powershell
+npm run check:desktop
+npm run check:binaries
+npm run check:v1-services
+npm run check:task-actions
+npm run check:persistence
+npm run check:package
+```
+
+涉及进阶能力时可以继续运行：
+
+```powershell
+npm run check:v2-options
+npm run check:v2-subtitles
+npm run check:v2-subtitle-download
+npm run check:v2-embed-subtitles
+npm run check:v2-metadata-smoke
+npm run check:v2-archive-history
+npm run check:v2-playlist
+```
+
 ## 常见问题
 
 ### npm run dev 应该在哪里运行？
 
-需要在项目根目录运行，也就是包含 `package.json` 的目录：
+需要在项目根目录运行，也就是包含 `package.json` 的目录。比如克隆仓库后：
 
 ```powershell
-cd E:\du\AI\ai_coding\codex\video_project_codex
+cd video_tool
 npm run dev
 ```
 
@@ -141,6 +208,10 @@ npm run dev
 
 这些文件体积比较大，不适合直接放进 Git 仓库。项目提供了准备脚本，新环境中执行一次即可。
 
+### 下载失败一定是程序问题吗？
+
+不一定。链接失效、网站规则变化、登录限制、网络波动、地区限制、文件夹权限不足等都会导致失败。任务中心会尽量显示可读原因，必要时可以查看任务日志。
+
 ## 项目结构
 
 ```text
@@ -151,6 +222,15 @@ docs/       项目文档与阶段记录
 build/      应用图标资源
 data/       示例配置
 ```
+
+## 安全与合规
+
+- 前端页面只通过白名单接口访问桌面端能力。
+- 下载参数由项目内部的结构化选项生成，不提供任意命令执行入口。
+- 配置、历史和日志写入用户数据目录，不写入安装目录。
+- Cookie 属于敏感登录凭证，只建议在可信本机环境中使用。
+- 请只保存自己有权保存的内容，并遵守目标网站的规则。
+- 本项目不提供 DRM 破解、绕过付费权限或绕过访问限制的能力。
 
 ## 项目说明
 

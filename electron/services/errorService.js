@@ -14,7 +14,7 @@ const ERROR_MAPPINGS = [
   {
     code: ERROR_CODES.LOGIN_REQUIRED,
     test: /Fresh cookies|cookies.*needed|Sign in to confirm|login required|需要.*Cookie|需要.*登录/i,
-    message: "该站点需要浏览器 Cookie 才能解析或下载，V1 暂不支持 Cookie；请更换公开直链或等待 V2 Cookie 支持"
+    message: "该站点可能需要 Cookie 才能解析或下载，请在设置中配置 Cookie 后重试，或更换公开链接"
   },
   {
     code: ERROR_CODES.HTTP_403,

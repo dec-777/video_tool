@@ -15,12 +15,13 @@ function runYtdlp(args, options = {}) {
 
     let stdout = "";
     let stderr = "";
-    let finished = false;
+    let settled = false;
     const timeoutMs = options.timeoutMs || 0;
     const timer =
       timeoutMs > 0
         ? setTimeout(() => {
-            if (!finished) {
+            if (!settled) {
+              settled = true;
               child.kill();
               reject(new Error(`yt-dlp timed out after ${timeoutMs}ms`));
             }
@@ -40,13 +41,19 @@ function runYtdlp(args, options = {}) {
     });
 
     child.on("error", (error) => {
-      finished = true;
+      if (settled) {
+        return;
+      }
+      settled = true;
       if (timer) clearTimeout(timer);
       reject(error);
     });
 
     child.on("close", (code) => {
-      finished = true;
+      if (settled) {
+        return;
+      }
+      settled = true;
       if (timer) clearTimeout(timer);
 
       if (code === 0) {

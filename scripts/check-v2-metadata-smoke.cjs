@@ -1,5 +1,7 @@
 const fs = require("fs");
+const http = require("http");
 const path = require("path");
+const { spawn } = require("child_process");
 const { app } = require("electron");
 const { useWorkspaceUserData } = require("./testUserData.cjs");
 const {
@@ -7,8 +9,10 @@ const {
   configureTaskQueue,
   getTasks
 } = require("../electron/services/taskQueue");
+const { getFfmpegPath } = require("../electron/utils/pathUtils");
 
-const testUrl = process.env.METADATA_TEST_URL || "https://vimeo.com/76979871";
+const externalTestUrl = process.env.METADATA_TEST_URL || "";
+const sourceDir = path.join(__dirname, "..", "downloads", "metadata smoke source");
 const outputDir = path.join(
   __dirname,
   "..",
@@ -16,13 +20,20 @@ const outputDir = path.join(
   "metadata smoke test",
   String(Date.now())
 );
+const sourceFile = path.join(sourceDir, "sample.mp4");
+const thumbnailFile = path.join(sourceDir, "thumb.jpg");
 const timeoutMs = 240000;
 
 useWorkspaceUserData(app, "check-v2-metadata-smoke");
 
 app.whenReady()
   .then(async () => {
+    fs.mkdirSync(sourceDir, { recursive: true });
     fs.mkdirSync(outputDir, { recursive: true });
+    await ensureSourceFiles();
+    const server = externalTestUrl ? null : await startStaticServer();
+    const testUrl = externalTestUrl || `http://127.0.0.1:${server.port}/index.html`;
+
     configureTaskQueue({ getMainWindow: () => null, concurrentDownloads: 1 });
 
     const [task] = addTasks({
@@ -94,6 +105,9 @@ app.whenReady()
 
     function finish(code, message) {
       clearInterval(timer);
+      if (server) {
+        server.close();
+      }
       if (code === 0) {
         console.log(message);
       } else {
@@ -113,4 +127,148 @@ function listFiles(dir) {
   }
 
   return fs.readdirSync(dir).filter((file) => fs.statSync(path.join(dir, file)).isFile());
+}
+
+async function ensureSourceFiles() {
+  await createSourceVideo();
+  await createThumbnail();
+}
+
+function createSourceVideo() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      getFfmpegPath(),
+      [
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=160x90:rate=1",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=660:duration=2",
+        "-t",
+        "2",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:v",
+        "libx264",
+        "-c:a",
+        "aac",
+        "-shortest",
+        sourceFile
+      ],
+      { windowsHide: true }
+    );
+
+    collectProcessResult(child, resolve, reject, "ffmpeg video");
+  });
+}
+
+function createThumbnail() {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      getFfmpegPath(),
+      [
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=160x90:rate=1",
+        "-frames:v",
+        "1",
+        thumbnailFile
+      ],
+      { windowsHide: true }
+    );
+
+    collectProcessResult(child, resolve, reject, "ffmpeg thumbnail");
+  });
+}
+
+function collectProcessResult(child, resolve, reject, label) {
+  let output = "";
+  child.stdout.on("data", (data) => {
+    output += data.toString("utf8");
+  });
+  child.stderr.on("data", (data) => {
+    output += data.toString("utf8");
+  });
+  child.on("error", reject);
+  child.on("close", (code) => {
+    if (code === 0) {
+      resolve();
+      return;
+    }
+
+    reject(new Error(output || `${label} exited with code ${code}`));
+  });
+}
+
+function startStaticServer() {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((request, response) => {
+      if (request.url === "/" || request.url === "/index.html") {
+        const port = server.address().port;
+        const body = buildMetadataHtml(port);
+        response.writeHead(200, {
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Length": Buffer.byteLength(body)
+        });
+        response.end(body);
+        return;
+      }
+
+      const fileName = decodeURIComponent(request.url.slice(1));
+      const filePath = path.join(sourceDir, fileName);
+      if (!filePath.startsWith(sourceDir) || !fs.existsSync(filePath)) {
+        response.writeHead(404);
+        response.end();
+        return;
+      }
+
+      response.writeHead(200, {
+        "Content-Type": getContentType(filePath),
+        "Content-Length": fs.statSync(filePath).size
+      });
+      fs.createReadStream(filePath).pipe(response);
+    });
+
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve({
+        close: () => server.close(),
+        port: address.port
+      });
+    });
+  });
+}
+
+function buildMetadataHtml(port) {
+  const baseUrl = `http://127.0.0.1:${port}`;
+  return [
+    "<!doctype html>",
+    "<html>",
+    "<head>",
+    "  <title>Local metadata smoke</title>",
+    '  <meta name="description" content="Local metadata smoke description">',
+    '  <meta property="og:title" content="Local metadata smoke">',
+    '  <meta property="og:description" content="Local metadata smoke description">',
+    `  <meta property="og:image" content="${baseUrl}/thumb.jpg">`,
+    "</head>",
+    "<body>",
+    '  <video controls src="sample.mp4"></video>',
+    "</body>",
+    "</html>"
+  ].join("\n");
+}
+
+function getContentType(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === ".html") return "text/html; charset=utf-8";
+  if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
+  if (extension === ".mp4") return "video/mp4";
+  return "application/octet-stream";
 }

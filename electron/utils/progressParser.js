@@ -21,6 +21,20 @@ function parseProgressLine(line) {
     };
   }
 
+  const progressWithoutEta = trimmed.match(
+    /\[download\]\s+([\d.]+)%\s+of\s+([^\s]+)(?:\s+at\s+([^\s]+))?/i
+  );
+
+  if (progressWithoutEta) {
+    return {
+      status: TASK_STATUS.DOWNLOADING,
+      percent: Number(progressWithoutEta[1]),
+      totalSize: progressWithoutEta[2],
+      speed: progressWithoutEta[3] || "",
+      eta: ""
+    };
+  }
+
   const destination = parseDestination(trimmed);
   if (destination) {
     return destination;
@@ -43,7 +57,14 @@ function parseProgressLine(line) {
     };
   }
 
-  if (/\[(ExtractAudio|Metadata|EmbedSubtitle|Fixup|MoveFiles)\]/i.test(trimmed)) {
+  if (/\[MoveFiles\]/i.test(trimmed)) {
+    return {
+      status: TASK_STATUS.POSTPROCESSING,
+      outputFile: parseLastQuotedPath(trimmed)
+    };
+  }
+
+  if (/\[(ExtractAudio|Metadata|EmbedSubtitle|Fixup)\]/i.test(trimmed)) {
     return {
       status: TASK_STATUS.POSTPROCESSING,
       outputFile: parseQuotedPath(trimmed)
@@ -107,6 +128,12 @@ function parseInfoDestination(line) {
 function parseQuotedPath(line) {
   const match = line.match(/"([^"]+)"/);
   return match ? match[1] : "";
+}
+
+function parseLastQuotedPath(line) {
+  const matches = Array.from(line.matchAll(/"([^"]+)"/g));
+  const lastMatch = matches[matches.length - 1];
+  return lastMatch ? lastMatch[1] : "";
 }
 
 function stripQuotes(value) {
