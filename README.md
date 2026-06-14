@@ -8,7 +8,11 @@
 
 [Download video_tool](https://github.com/dec-777/video_tool/releases/latest)
 
-下载 `video_tool Setup 0.1.0.exe` 后双击安装即可使用。
+也可以直接下载当前版本安装包：
+
+[video_tool.Setup.0.1.0.exe](https://github.com/dec-777/video_tool/releases/download/v0.1.0/video_tool.Setup.0.1.0.exe)
+
+下载后双击安装即可使用。
 
 ## 功能介绍
 
